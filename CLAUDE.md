@@ -6,12 +6,13 @@ KAIST 스트릿 댄스 동아리 디지털 본부 (외부 홍보 + 멤버 커뮤
 
 ## 현재 상태
 
-**Step 2 외부 공개 v1 + Step 3 가입 흐름 시작** (2026-04-27).
+**Step 3 가입 흐름 + Step 4 /me 프로필 편집 완료** (2026-04-27).
 - 라이브: https://lunatic-neon.vercel.app (Vercel auto-deploy from main)
-- DB backbone (스키마 + RLS + Auth Hook + Storage) 완료, 11 테이블/7 enum
-- 정적 라우트 완료: `/`, `/about`, `/performances`, `/events`, `/store`, `/genres/[slug]` (9개 사전 생성)
-- Google OAuth 로그인 작동 (헤더 Sign in / Sign out)
-- 진행 중: signup 폼 + `signup_member` RPC (다음 세션)
+- DB: 7개 마이그레이션 (스키마 + RLS + Auth Hook + Storage + signup + JWT 픽스 + /me update RPC)
+- 정적 라우트: `/`, `/about`, `/performances`, `/events`, `/store`, `/genres/[slug]` (9개 사전 생성)
+- 가입 라우트: `/signup`, `/signup/pending`, `/auth/callback` (membership 분기), `/me` (프로필 편집)
+- Google OAuth + owner 자동 approve end-to-end 검증 완료
+- 진행 중: avatar 업로드 (Storage avatars bucket → /me 통합), `/dancers` 갤러리 (다음 세션)
 
 ## 핵심 자료
 
@@ -32,11 +33,11 @@ KAIST 스트릿 댄스 동아리 디지털 본부 (외부 홍보 + 멤버 커뮤
 
 ## 권한 모델 (확정)
 
-- **owner**: 빌더 본인 (영구 maintainer). env var `OWNER_EMAIL` + Supabase Auth Hook으로 JWT custom claim에 `role: owner` 박음
+- **owner**: 빌더 본인 (영구 maintainer). `app_config.owner_email` row + Supabase Auth Hook으로 JWT custom claim `user_role: owner` 박음 (top-level `role` claim은 PostgREST가 SET ROLE에 사용하므로 절대 건드리면 안 됨 — 0006_fix_owner_claim.sql 참고)
 - **admin**: 현역 회장단 (매년 교체). app 내 admin role 토글로 승계
 - **member**: 일반 멤버
 
-보안: Supabase RLS (Row Level Security) 단일 source of truth. 코드 라우트 권한 체크 안 함.
+보안: Supabase RLS (Row Level Security) 단일 source of truth. 코드 라우트 권한 체크 안 함. `members` INSERT는 `signup_member` SECURITY DEFINER RPC만 가능 (role/application_status 사용자 input 무시).
 
 ## 디자인 시스템 (확정 — design review 2026-04-27)
 
@@ -61,12 +62,20 @@ KAIST 스트릿 댄스 동아리 디지털 본부 (외부 홍보 + 멤버 커뮤
 
 자세한 명세는 design doc의 "Design System" 섹션 참조.
 
-## 가입 흐름 (확정)
+## 가입 흐름 (구현됨)
 
-- Google OAuth 로그인 → 가입 폼 (실명/댄서명/기수/타입/학번/사진/장르/인스타)
-- Invite code 입력 → 코드 일치 시 자동 가입 / 코드 없으면 수동 큐
-- admin이 코드 발급 시 만료 기간 설정 (1일 / 7일 / 30일 / 한 학기 / 영구)
-- 학교 이메일 강제 안 함 (alumni mode 호환)
+**2단계 분리** — application은 가입 신청 핵심만, profile은 승인 후 `/me`에서 편집:
+
+1. Google OAuth → `/auth/callback` → `has_member_row()` 체크 → 없으면 `/signup`
+2. `/signup` 폼 (6 필드): 실명, 기수(0.5단위), 국가(드롭다운), 학교(default KAIST), 학번 + invite code 토글
+3. `signup_member` RPC가 분기:
+   - JWT `user_role=owner` → 자동 `approved`+`role=owner`
+   - 유효한 invite code → 자동 `approved`+`role=member`
+   - 코드 없음 → `pending` (운영진 검토 대기, `/signup/pending` 도착)
+4. `dancer_name`은 RPC가 `<email_prefix>_<uid 4자>`로 자동 생성. 사용자가 `/me`에서 변경.
+5. `/me` 프로필 편집: 댄서명, 타입, 장르(+primary), 인스타, bio, bio_long, 영상 3슬롯. `update_my_profile` RPC로 members + member_genres 원자적 업데이트. (Avatar 업로드는 미구현, 다음 세션)
+6. invite_codes는 admin/owner만 발급/회수 (RLS), 만료 기간 enum (1d/7d/30d/semester/permanent)
+7. 학교 이메일 강제 안 함 (alumni mode 호환)
 
 ## 멤버 status
 
