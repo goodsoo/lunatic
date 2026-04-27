@@ -2,32 +2,33 @@
 
 ## 현재 상태
 
-**Step 4 /me 프로필 편집 완료. 다음: avatar 업로드 + `/dancers` 갤러리** (2026-04-27).
+**Step 4 완료 (avatar 업로드 + `/dancers` 갤러리). 다음: `/genres/[slug]` 데이터 연결 또는 `/dancers/[id]` 상세** (2026-04-28).
 
 라이브: https://lunatic-neon.vercel.app (Vercel auto-deploy from `main`).
-로컬 검증 완료 — origin보다 2 commit 앞서 있음 (5e89eea signup, 5ebf37b /me). push 안 한 상태.
+직전 세션 3 commit (5e89eea/5ebf37b/fbff478) push 완료. 이번 세션 avatar + `/dancers` 추가, 미커밋.
 
 ### 완료 — 큰 그림
 - Step 1: 셋업 + Supabase DB (스키마/RLS/Auth Hook/Storage) + Vercel 연결
 - Step 2: 정적 페이지 v1 (`/`, `/about`, `/performances`, `/events`, `/store`, `/genres/[slug]` × 9) + 디자인 시스템
 - Step 3: Google OAuth + 가입 흐름 (`/signup` + `/signup/pending` + `signup_member` RPC). owner 자동 approve, invite code 즉시 승인, 코드 없음 → pending 큐. 본인 + cross-account 검증 완료.
-- Step 4: `/me` 프로필 편집 (`update_my_profile` RPC, members + member_genres 원자적 업데이트). 동작 검증 완료.
+- Step 4: `/me` 프로필 편집 (`update_my_profile` RPC, members + member_genres 원자적 업데이트) + avatar 업로드 (Storage `avatars` private bucket → 클라이언트 업로드 → `updateAvatar` 액션이 `members.avatar_url` 직접 UPDATE + 이전 파일 정리, signed URL preview, 폼과 분리된 즉시 저장) + `/dancers` 갤러리 (멤버 전용 — 비로그인 → /auth/error, pending → /signup/pending. `dancers_member` view + `member_genres` 조인. 카드 그리드, 장르 필터(쿼리 `?g=`), `createSignedUrls` 일괄.
 
 ### 마이그레이션 7개
 0001 스키마 → 0002 RLS → 0003 Auth Hook → 0004 Storage → 0005 signup_member RPC → 0006 JWT claim 픽스(`role`→`user_role`) + signup RPC 시그니처 단순화 → 0007 update_my_profile RPC.
 
 ## 다음에 해야 할 일
 
-### 직전 milestone push (선택)
-- [ ] `git push` — 5e89eea + 5ebf37b. Vercel auto-deploy 트리거됨. 하기 전에 prod의 Supabase에 0005/0006/0007 적용 여부 확인 필요 (로컬은 검증됐지만 prod DB 아직 안 돌렸으면 깨짐).
+### 직전 작업 검증 + 푸시
+- [ ] `/me` avatar 업로드 브라우저 검증 — 업로드/교체/삭제, signed URL preview, prod 정책 확인.
+- [ ] `/dancers` 브라우저 검증 — 비로그인 redirect, pending redirect, 카드 그리드, 장르 필터 카운트, 빈 상태.
+- [ ] commit + push.
 
 ### 다음 작업 후보 (우선순위)
-1. **`/me` avatar 업로드** — Storage `avatars` bucket은 0004에서 정책까지 셋업됨. 클라이언트 업로드 (`@supabase/ssr` browser client) → `members.avatar_url` 갱신만 하면 끝. 30분~1시간.
-2. **`/dancers` 갤러리** — 이제 프로필 데이터 들어가니까 의미 있음. `dancers_member` view 사용 (멤버 전용) 또는 `dancers_public` view (외부 공개). 카드 그리드 + 장르 필터. 1~2시간.
-3. **`/genres/[slug]` 실제 데이터 연결** — 현재 placeholder. 장르별 댄서 + 영상 + Hall of Fame 섹션.
-4. **`/events/[id]` 행사 상세 + admin 행사 등록 UI** — Step 5에 해당.
-5. **`/notices` 멤버 공지** — Step 6.
-6. **reaction + shout** — Step 7 (D7 디자인).
+1. **`/dancers/[id]` 댄서 상세** — bio_long + 영상 임베드(최대 3) + 인스타 링크. `/dancers` 카드에서 link.
+2. **`/genres/[slug]` 실제 데이터 연결** — 현재 placeholder. 장르별 댄서 (member_genres 조인) + 영상 + Hall of Fame 섹션. `/dancers` 카드 컴포넌트 재사용.
+3. **`/events/[id]` 행사 상세 + admin 행사 등록 UI** — Step 5에 해당.
+4. **`/notices` 멤버 공지** — Step 6.
+5. **reaction + shout** — Step 7 (D7 디자인).
 
 ### 사용자 액션 대기 (블로커 아님)
 - 회장단 합의 미팅 — owner/admin 모델, 운영 정책(초상권/모더레이션)

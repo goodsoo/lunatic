@@ -6,13 +6,14 @@ KAIST 스트릿 댄스 동아리 디지털 본부 (외부 홍보 + 멤버 커뮤
 
 ## 현재 상태
 
-**Step 3 가입 흐름 + Step 4 /me 프로필 편집 완료** (2026-04-27).
+**Step 4 완료 (avatar 업로드 + `/dancers` 갤러리)** (2026-04-28).
 - 라이브: https://lunatic-neon.vercel.app (Vercel auto-deploy from main)
 - DB: 7개 마이그레이션 (스키마 + RLS + Auth Hook + Storage + signup + JWT 픽스 + /me update RPC)
 - 정적 라우트: `/`, `/about`, `/performances`, `/events`, `/store`, `/genres/[slug]` (9개 사전 생성)
-- 가입 라우트: `/signup`, `/signup/pending`, `/auth/callback` (membership 분기), `/me` (프로필 편집)
+- 가입 라우트: `/signup`, `/signup/pending`, `/auth/callback` (membership 분기), `/me` (프로필 편집 + avatar 업로드)
+- 멤버 라우트: `/dancers` (멤버 전용 갤러리, dancers_member view)
 - Google OAuth + owner 자동 approve end-to-end 검증 완료
-- 진행 중: avatar 업로드 (Storage avatars bucket → /me 통합), `/dancers` 갤러리 (다음 세션)
+- 다음: `/dancers/[id]` 상세, `/genres/[slug]` 데이터 연결
 
 ## 핵심 자료
 
