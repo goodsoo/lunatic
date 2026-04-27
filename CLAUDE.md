@@ -6,7 +6,12 @@ KAIST 스트릿 댄스 동아리 디지털 본부 (외부 홍보 + 멤버 커뮤
 
 ## 현재 상태
 
-**Step 1 셋업 완료** (2026-04-27). Next.js 16 + Tailwind 4 + Supabase 클라이언트 + Vitest/Playwright + 디자인 토큰 wired. 다음: Supabase 프로젝트 생성(사용자) → DB 스키마/RLS → 첫 페이지 구현.
+**Step 2 외부 공개 v1 + Step 3 가입 흐름 시작** (2026-04-27).
+- 라이브: https://lunatic-neon.vercel.app (Vercel auto-deploy from main)
+- DB backbone (스키마 + RLS + Auth Hook + Storage) 완료, 11 테이블/7 enum
+- 정적 라우트 완료: `/`, `/about`, `/performances`, `/events`, `/store`, `/genres/[slug]` (9개 사전 생성)
+- Google OAuth 로그인 작동 (헤더 Sign in / Sign out)
+- 진행 중: signup 폼 + `signup_member` RPC (다음 세션)
 
 ## 핵심 자료
 
