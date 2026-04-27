@@ -2,33 +2,46 @@
 
 ## 현재 상태
 
-**Step 4 완료 (avatar 업로드 + `/dancers` 갤러리). 다음: `/genres/[slug]` 데이터 연결 또는 `/dancers/[id]` 상세** (2026-04-28).
+**Step 4 완료 + 추가 (avatar / `/dancers` / `/dancers/[id]` / `/genres/[slug]` 데이터 / unit 테스트). 야간 자동 작업 완료** (2026-04-28).
 
 라이브: https://lunatic-neon.vercel.app (Vercel auto-deploy from `main`).
-직전 세션 3 commit (5e89eea/5ebf37b/fbff478) push 완료. 이번 세션 avatar + `/dancers` 추가, 미커밋.
+직전 푸시 fbff478 (4/27). 이번 세션 7 commit 미푸시 — 사용자 브라우저 검증 후 푸시 예정.
+
+이번 세션 미푸시 커밋:
+- 612003d feat: /me avatar upload (private bucket + signed URL preview)
+- 9a6c774 feat: /dancers 갤러리 (멤버 전용, 장르 필터, batch signed URLs)
+- 1884571 docs: sync after avatar + /dancers
+- 2718d73 refactor: DancerCard 공유 컴포넌트
+- dd67847 feat: /dancers/[id] 댄서 상세 (영상 임베드 + 메타 + 인스타)
+- 29f6f5c feat: /genres/[slug] 댄서 데이터 연결 (9개 장르 라우트)
+- afef173 test: validation + youtube helper unit tests (29 cases, 합 34 passed)
 
 ### 완료 — 큰 그림
 - Step 1: 셋업 + Supabase DB (스키마/RLS/Auth Hook/Storage) + Vercel 연결
 - Step 2: 정적 페이지 v1 (`/`, `/about`, `/performances`, `/events`, `/store`, `/genres/[slug]` × 9) + 디자인 시스템
 - Step 3: Google OAuth + 가입 흐름 (`/signup` + `/signup/pending` + `signup_member` RPC). owner 자동 approve, invite code 즉시 승인, 코드 없음 → pending 큐. 본인 + cross-account 검증 완료.
-- Step 4: `/me` 프로필 편집 (`update_my_profile` RPC, members + member_genres 원자적 업데이트) + avatar 업로드 (Storage `avatars` private bucket → 클라이언트 업로드 → `updateAvatar` 액션이 `members.avatar_url` 직접 UPDATE + 이전 파일 정리, signed URL preview, 폼과 분리된 즉시 저장) + `/dancers` 갤러리 (멤버 전용 — 비로그인 → /auth/error, pending → /signup/pending. `dancers_member` view + `member_genres` 조인. 카드 그리드, 장르 필터(쿼리 `?g=`), `createSignedUrls` 일괄.
+- Step 4: `/me` 프로필 편집 (`update_my_profile` RPC) + avatar 업로드 (Storage `avatars` private bucket → 클라이언트 업로드 → `updateAvatar`가 `members.avatar_url` 직접 UPDATE + 이전 파일 정리, signed URL preview, 폼과 분리된 즉시 저장).
+- 멤버 갤러리 + 댄서 상세 + 장르 데이터 연결: `/dancers` (dancers_member view + member_genres 조인, 장르 필터 `?g=`, `createSignedUrls` 일괄), `/dancers/[id]` (bio_long + youtube 임베드 + 인스타 + 메타), `/genres/[slug]` (placeholder → 실제 댄서 그리드, primary 우선).
+- 검증 모듈 추출 + unit 테스트: `src/lib/validation.ts` (signup/profile/avatar path 검증) + `src/lib/youtube.ts` (URL → embed). `signup/actions.ts`, `me/actions.ts`이 위 함수만 호출. 34 unit 테스트 통과.
 
 ### 마이그레이션 7개
 0001 스키마 → 0002 RLS → 0003 Auth Hook → 0004 Storage → 0005 signup_member RPC → 0006 JWT claim 픽스(`role`→`user_role`) + signup RPC 시그니처 단순화 → 0007 update_my_profile RPC.
 
 ## 다음에 해야 할 일
 
-### 직전 작업 검증 + 푸시
-- [ ] `/me` avatar 업로드 브라우저 검증 — 업로드/교체/삭제, signed URL preview, prod 정책 확인.
-- [ ] `/dancers` 브라우저 검증 — 비로그인 redirect, pending redirect, 카드 그리드, 장르 필터 카운트, 빈 상태.
-- [ ] commit + push.
+### 직전 작업 검증 + 푸시 (사용자 액션)
+- [ ] `/me` avatar — 업로드/교체/삭제, signed URL preview, prod 정책.
+- [ ] `/dancers` — 비로그인/pending redirect, 카드 그리드, 장르 필터 카운트.
+- [ ] `/dancers/[id]` — 영상 임베드 (watch/youtu.be/shorts 모두), 인스타 링크.
+- [ ] `/genres/[slug]` — placeholder 사라지고 댄서 그리드 표시.
+- [ ] `git push` (검증 후).
 
 ### 다음 작업 후보 (우선순위)
-1. **`/dancers/[id]` 댄서 상세** — bio_long + 영상 임베드(최대 3) + 인스타 링크. `/dancers` 카드에서 link.
-2. **`/genres/[slug]` 실제 데이터 연결** — 현재 placeholder. 장르별 댄서 (member_genres 조인) + 영상 + Hall of Fame 섹션. `/dancers` 카드 컴포넌트 재사용.
-3. **`/events/[id]` 행사 상세 + admin 행사 등록 UI** — Step 5에 해당.
-4. **`/notices` 멤버 공지** — Step 6.
-5. **reaction + shout** — Step 7 (D7 디자인).
+1. **`/events/[id]` 행사 상세 + admin 행사 등록 UI** — Step 5. 새 RPC 가능성 (event INSERT는 admin RLS로 직접 가능할 수도).
+2. **`/notices` 멤버 공지** — Step 6.
+3. **reaction + shout** — Step 7 (D7 디자인).
+4. **`/genres/[slug]` 영상 섹션** — 장르별 대표 영상 + 명장면. 시드 데이터 대기 (팀장).
+5. **권한 헬퍼 + 테스트** — `isAdmin`, `canCurate` 등 lib 헬퍼 (테스트 플랜 권한 3건).
 
 ### 사용자 액션 대기 (블로커 아님)
 - 회장단 합의 미팅 — owner/admin 모델, 운영 정책(초상권/모더레이션)
