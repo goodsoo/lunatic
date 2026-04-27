@@ -2,44 +2,39 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { validateSignupInput } from "@/lib/validation";
 
 export type SignupState = { error?: string };
 
-function pick(formData: FormData, key: string): string {
+function pickRaw(formData: FormData, key: string): string {
   const v = formData.get(key);
-  return typeof v === "string" ? v.trim() : "";
+  return typeof v === "string" ? v : "";
 }
 
 export async function submitSignup(
   _prev: SignupState | undefined,
   formData: FormData,
 ): Promise<SignupState> {
-  const real_name = pick(formData, "real_name");
-  const cohortRaw = pick(formData, "cohort");
-  const cohort = Number(cohortRaw);
-  const country = pick(formData, "country");
-  const school = pick(formData, "school") || "KAIST";
-  const student_id = pick(formData, "student_id");
-  const has_code = pick(formData, "has_code");
-  const invite_code = has_code === "yes" ? pick(formData, "invite_code") : "";
-
-  if (!real_name) return { error: "real_name_required" };
-  if (!Number.isFinite(cohort) || cohort <= 0 || cohort * 2 !== Math.trunc(cohort * 2)) {
-    return { error: "cohort_invalid" };
-  }
-  if (!country) return { error: "country_required" };
-  if (!school) return { error: "school_required" };
-  if (!student_id) return { error: "student_id_required" };
-  if (has_code === "yes" && !invite_code) return { error: "invite_code_required" };
+  const result = validateSignupInput({
+    real_name: pickRaw(formData, "real_name"),
+    cohort_raw: pickRaw(formData, "cohort"),
+    country: pickRaw(formData, "country"),
+    school: pickRaw(formData, "school"),
+    student_id: pickRaw(formData, "student_id"),
+    has_code: pickRaw(formData, "has_code").trim(),
+    invite_code: pickRaw(formData, "invite_code"),
+  });
+  if (!result.ok) return { error: result.error };
+  const v = result.data;
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("signup_member", {
-    p_real_name: real_name,
-    p_cohort: cohort,
-    p_country: country,
-    p_school: school,
-    p_student_id: student_id,
-    p_invite_code: invite_code || null,
+    p_real_name: v.real_name,
+    p_cohort: v.cohort,
+    p_country: v.country,
+    p_school: v.school,
+    p_student_id: v.student_id,
+    p_invite_code: v.invite_code,
   });
 
   if (error) {
