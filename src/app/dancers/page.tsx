@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { GENRES, type GenreSlug } from "@/lib/genres";
 import { SectionMarker } from "../_components/SectionMarker";
+import { DancerCard } from "../_components/DancerCard";
 
 export const metadata: Metadata = {
   title: "Dancers — Real Lunatic",
@@ -175,6 +176,7 @@ export default async function DancersPage({
               return (
                 <li key={d.id} className="bg-bg">
                   <DancerCard
+                    href={`/dancers/${d.id}`}
                     name={d.dancer_name}
                     cohort={d.cohort}
                     bio={d.bio}
@@ -188,57 +190,5 @@ export default async function DancersPage({
         )}
       </section>
     </main>
-  );
-}
-
-function DancerCard({
-  name,
-  cohort,
-  bio,
-  primaryGenre,
-  avatarUrl,
-}: {
-  name: string;
-  cohort: number;
-  bio: string | null;
-  primaryGenre: string | null;
-  avatarUrl: string | null;
-}) {
-  return (
-    <article className="grid gap-3 p-4 md:p-5">
-      <div className="aspect-square w-full overflow-hidden bg-surface">
-        {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={avatarUrl}
-            alt={`${name} avatar`}
-            className="size-full object-cover"
-          />
-        ) : (
-          <div className="flex size-full items-center justify-center font-display text-5xl tracking-tight text-text-3">
-            {name.charAt(0).toUpperCase()}
-          </div>
-        )}
-      </div>
-      <div className="grid gap-1">
-        <h3 className="font-display text-2xl leading-none tracking-tight text-text-1">
-          {name}
-        </h3>
-        <div className="flex items-baseline gap-2 font-body text-xs uppercase tracking-widest text-text-3">
-          <span>{cohort}기</span>
-          {primaryGenre && (
-            <>
-              <span aria-hidden>·</span>
-              <span className="text-text-2">{primaryGenre}</span>
-            </>
-          )}
-        </div>
-        {bio && (
-          <p className="mt-1 font-body text-sm text-text-2 line-clamp-2">
-            {bio}
-          </p>
-        )}
-      </div>
-    </article>
   );
 }
