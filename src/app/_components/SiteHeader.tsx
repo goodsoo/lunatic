@@ -29,6 +29,11 @@ export async function SiteHeader() {
         <Link href="/about" className="hover:text-text-1">
           About
         </Link>
+        {user && (
+          <Link href="/dancers" className="hover:text-text-1">
+            Dancers
+          </Link>
+        )}
         <span className="hidden h-3 w-px bg-text-3/40 md:inline-block" />
         {user ? (
           <div className="flex items-center gap-4">
