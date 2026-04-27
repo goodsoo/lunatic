@@ -1,43 +1,13 @@
 import Link from "next/link";
 import { GENRES } from "@/lib/genres";
+import { SectionMarker } from "./_components/SectionMarker";
 
 export default function Home() {
   return (
-    <>
-      <SiteHeader />
-      <main>
-        <Hero />
-        <GenresSection />
-      </main>
-      <SiteFooter />
-    </>
-  );
-}
-
-function SiteHeader() {
-  return (
-    <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between bg-bg/80 px-4 py-4 backdrop-blur md:px-8">
-      <Link
-        href="/"
-        className="font-logo text-lg lowercase tracking-tight text-text-1"
-      >
-        real lunatic
-      </Link>
-      <nav className="flex gap-6 font-body text-xs uppercase tracking-widest text-text-2 md:gap-10 md:text-sm">
-        <Link href="/performances" className="hover:text-text-1">
-          Performances
-        </Link>
-        <Link href="/events" className="hover:text-text-1">
-          Events
-        </Link>
-        <Link href="/store" className="hover:text-text-1">
-          Store
-        </Link>
-        <Link href="/about" className="hover:text-text-1">
-          About
-        </Link>
-      </nav>
-    </header>
+    <main>
+      <Hero />
+      <GenresSection />
+    </main>
   );
 }
 
@@ -97,24 +67,5 @@ function GenresSection() {
         ))}
       </ul>
     </section>
-  );
-}
-
-function SectionMarker({ number, label }: { number: string; label: string }) {
-  return (
-    <div className="mb-12 font-body text-xs uppercase tracking-widest text-text-3 md:mb-16">
-      ({number}) {label}
-    </div>
-  );
-}
-
-function SiteFooter() {
-  return (
-    <footer className="border-t border-text-3/30 px-4 py-12 md:px-8">
-      <div className="flex flex-col gap-4 font-body text-xs text-text-3 md:flex-row md:justify-between md:text-sm">
-        <span className="font-logo lowercase text-text-2">real lunatic</span>
-        <span>KAIST Street Dance Crew · since 2003</span>
-      </div>
-    </footer>
   );
 }

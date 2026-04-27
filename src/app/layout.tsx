@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Big_Shoulders, Inter, Vollkorn } from "next/font/google";
 import "./globals.css";
+import { SiteHeader } from "./_components/SiteHeader";
+import { SiteFooter } from "./_components/SiteFooter";
 
 const bigShoulders = Big_Shoulders({
   subsets: ["latin"],
@@ -34,7 +36,11 @@ export default function RootLayout({
       lang="ko"
       className={`${bigShoulders.variable} ${inter.variable} ${vollkorn.variable} h-full antialiased`}
     >
-      <body className="font-body min-h-full">{children}</body>
+      <body className="font-body min-h-full">
+        <SiteHeader />
+        {children}
+        <SiteFooter />
+      </body>
     </html>
   );
 }
