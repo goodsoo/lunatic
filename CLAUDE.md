@@ -6,7 +6,7 @@ KAIST 스트릿 댄스 동아리 디지털 본부 (외부 홍보 + 멤버 커뮤
 
 ## 현재 상태
 
-**Pre-implementation**. 디자인 페이즈 완료, 코드 작성 전.
+**Step 1 셋업 완료** (2026-04-27). Next.js 16 + Tailwind 4 + Supabase 클라이언트 + Vitest/Playwright + 디자인 토큰 wired. 다음: Supabase 프로젝트 생성(사용자) → DB 스키마/RLS → 첫 페이지 구현.
 
 ## 핵심 자료
 
