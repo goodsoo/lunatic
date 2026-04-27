@@ -8,6 +8,7 @@ const GENRE_SET = new Set<string>(GENRES.map((g) => g.slug));
 const TYPES = new Set(["undergrad", "grad", "other"]);
 
 export type ProfileState = { error?: string; ok?: boolean };
+export type AvatarState = { error?: string; ok?: boolean };
 
 function pick(formData: FormData, key: string): string {
   const v = formData.get(key);
@@ -54,6 +55,45 @@ export async function updateMyProfile(
 
   if (error) {
     return { error: error.message };
+  }
+
+  revalidatePath("/me");
+  return { ok: true };
+}
+
+export async function updateAvatar(
+  path: string | null,
+): Promise<AvatarState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "login_required" };
+
+  if (path !== null) {
+    if (typeof path !== "string" || !path.startsWith(`${user.id}/`)) {
+      return { error: "path_invalid" };
+    }
+  }
+
+  const previous = await supabase
+    .from("members")
+    .select("avatar_url")
+    .eq("id", user.id)
+    .maybeSingle<{ avatar_url: string | null }>();
+
+  const { error } = await supabase
+    .from("members")
+    .update({ avatar_url: path })
+    .eq("id", user.id);
+
+  if (error) {
+    return { error: "update_failed" };
+  }
+
+  const oldPath = previous.data?.avatar_url;
+  if (oldPath && oldPath !== path) {
+    await supabase.storage.from("avatars").remove([oldPath]);
   }
 
   revalidatePath("/me");

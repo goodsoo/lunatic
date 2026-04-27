@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { type GenreSlug } from "@/lib/genres";
 import { SectionMarker } from "../_components/SectionMarker";
 import { MyProfileForm, type MemberProfile } from "./MyProfileForm";
+import { AvatarUploader } from "./AvatarUploader";
 
 export const metadata: Metadata = {
   title: "My profile — Real Lunatic",
@@ -19,6 +20,7 @@ type MemberRow = MemberProfile & {
   country: string;
   role: "owner" | "admin" | "member";
   application_status: "pending" | "approved" | "rejected";
+  avatar_url: string | null;
 };
 
 export default async function MePage() {
@@ -31,7 +33,7 @@ export default async function MePage() {
   const { data: member } = await supabase
     .from("members")
     .select(
-      "dancer_name, type, instagram_handle, bio, bio_long, video_urls, real_name, email, cohort, school, student_id, country, role, application_status",
+      "dancer_name, type, instagram_handle, bio, bio_long, video_urls, real_name, email, cohort, school, student_id, country, role, application_status, avatar_url",
     )
     .eq("id", user.id)
     .maybeSingle<MemberRow>();
@@ -46,6 +48,14 @@ export default async function MePage() {
   const genres = (genreRows ?? []).map((r) => r.genre as GenreSlug);
   const primary =
     (genreRows ?? []).find((r) => r.is_primary)?.genre as GenreSlug | undefined;
+
+  let avatarSignedUrl: string | null = null;
+  if (member.avatar_url) {
+    const { data: signed } = await supabase.storage
+      .from("avatars")
+      .createSignedUrl(member.avatar_url, 60 * 60);
+    avatarSignedUrl = signed?.signedUrl ?? null;
+  }
 
   return (
     <main>
@@ -87,7 +97,12 @@ export default async function MePage() {
         <h2 className="font-display text-3xl tracking-tight text-text-1 md:text-5xl">
           PROFILE
         </h2>
-        <div className="mt-10 md:max-w-3xl">
+        <div className="mt-10 grid gap-12 md:max-w-3xl">
+          <AvatarUploader
+            userId={user.id}
+            initialUrl={avatarSignedUrl}
+            hasAvatar={!!member.avatar_url}
+          />
           <MyProfileForm
             initial={{
               dancer_name: member.dancer_name,
