@@ -2,7 +2,7 @@
 
 ## 현재 상태
 
-**Step 2 외부 공개 v1 라이브 + Step 3 가입 흐름 코드 완성** (2026-04-27).
+**Step 2 외부 공개 v1 라이브 + Step 3 가입 흐름 + Step 4 /me 프로필 편집** (2026-04-27).
 
 라이브: https://lunatic-neon.vercel.app (Vercel auto-deploy from `main`)
 
@@ -26,6 +26,10 @@
 ✅ Step 3 — `/signup` 폼 페이지 + `/signup/pending` 안내 페이지 (디자인 시스템 적용, useActionState)
 ✅ Step 3 — `/signup` 폼 단순화 (가입 신청 단계는 실명/기수/국가/학교/학번 + invite code만 — 댄서명/장르/bio/영상은 `/me`로 이관). RPC 시그니처도 6개 인자로 축소. dancer_name은 RPC가 자동 생성 후 `/me`에서 사용자가 변경.
 ✅ Step 3 — pnpm build/lint/test 통과
+✅ Step 3 — owner 자동 approve end-to-end 검증 (2026-04-27)
+✅ Step 4 — `/me` 프로필 편집 페이지 (account 메타 read-only + 댄서명/타입/장르(+primary)/인스타/bio/bio_long/영상 3슬롯 편집)
+✅ Step 4 — `0007_update_profile.sql` — `update_my_profile` RPC가 members + member_genres 원자적 업데이트
+✅ Step 4 — SiteHeader 이메일 → `/me` 링크화
 
 ## 다음에 해야 할 일
 
@@ -38,8 +42,12 @@
 - [ ] **이미 가입한 유저 /signup 접근 테스트** — `/`로 redirect되는지
 - [ ] **avatar 업로드** — 일단 건너뜀 (`/me` 페이지에서 추후)
 
+### Step 4 검증 (사용자 작업)
+- [ ] **`0007_update_profile.sql` Dashboard 실행**
+- [ ] **`/me` 동작 테스트** — 댄서명 변경, 장르 선택, primary 토글, 영상 URL 추가 → Save → 새로고침해도 유지되는지
+
 ### Step 4 이후 (큰 그림)
-- [ ] `/me` 프로필 편집 페이지 (avatar 업로드 포함)
+- [ ] `/me` avatar 업로드 (Storage avatars bucket 연결)
 - [ ] `/dancers` 갤러리 + `/dancers/[dancer_name]`
 - [ ] `/genres/[slug]` 실제 데이터 연결
 - [ ] `/events/[id]` 행사 상세

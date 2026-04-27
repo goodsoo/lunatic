@@ -31,20 +31,23 @@ export async function SiteHeader() {
         </Link>
         <span className="hidden h-3 w-px bg-text-3/40 md:inline-block" />
         {user ? (
-          <form action={signOut} className="flex items-center gap-3">
-            <span
-              className="hidden max-w-[140px] truncate text-text-3 md:inline"
+          <div className="flex items-center gap-4">
+            <Link
+              href="/me"
+              className="hidden max-w-[140px] truncate text-text-3 hover:text-text-1 md:inline"
               title={user.email ?? ""}
             >
               {user.email}
-            </span>
-            <button
-              type="submit"
-              className="cursor-pointer hover:text-text-1"
-            >
-              Sign out
-            </button>
-          </form>
+            </Link>
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="cursor-pointer hover:text-text-1"
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
         ) : (
           <form action={signInWithGoogle}>
             <button
