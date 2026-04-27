@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const requestedNext = searchParams.get("next");
 
   if (!code) {
     return NextResponse.redirect(`${origin}/auth/error?reason=missing_code`);
@@ -17,6 +17,10 @@ export async function GET(request: NextRequest) {
       `${origin}/auth/error?reason=${encodeURIComponent(error.message)}`,
     );
   }
+
+  // Route by membership: no row → /signup; row → caller's `next` or /
+  const { data: hasRow } = await supabase.rpc("has_member_row");
+  const next = hasRow ? (requestedNext ?? "/") : "/signup";
 
   // Forwarded host handles Vercel preview / prod where origin may differ.
   const forwardedHost = request.headers.get("x-forwarded-host");

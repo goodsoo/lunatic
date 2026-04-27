@@ -2,7 +2,7 @@
 
 ## 현재 상태
 
-**Step 2 외부 공개 v1 라이브 + Step 3 가입 흐름 절반** (2026-04-27).
+**Step 2 외부 공개 v1 라이브 + Step 3 가입 흐름 코드 완성** (2026-04-27).
 
 라이브: https://lunatic-neon.vercel.app (Vercel auto-deploy from `main`)
 
@@ -19,22 +19,23 @@
 ✅ Step 3 — SiteHeader 로그인 상태 표시 (Sign in / 이메일 + Sign out)
 ✅ Step 3 — Google Cloud Console OAuth client + Supabase Google provider 활성화 (사용자 작업)
 ✅ Step 3 — 로컬에서 Google OAuth end-to-end 검증 통과
+✅ Step 3 — `0005_signup.sql` 마이그레이션 작성 (`signup_member` SECURITY DEFINER RPC + `has_member_row` + `members_self_insert` drop)
+✅ Step 3 — Owner 자동 approve 분기 (JWT `role: owner` claim 매칭 시 RPC가 approved + role=owner 박음)
+✅ Step 3 — `getUserAndMember()` 헬퍼 (`src/lib/auth.ts`)
+✅ Step 3 — `/auth/callback` 분기 (`has_member_row` 호출 → 없으면 `/signup`, 있으면 next/홈)
+✅ Step 3 — `/signup` 폼 페이지 + `/signup/pending` 안내 페이지 (디자인 시스템 적용, useActionState)
+✅ Step 3 — `/signup` 폼 단순화 (가입 신청 단계는 실명/기수/국가/학교/학번 + invite code만 — 댄서명/장르/bio/영상은 `/me`로 이관). RPC 시그니처도 6개 인자로 축소. dancer_name은 RPC가 자동 생성 후 `/me`에서 사용자가 변경.
+✅ Step 3 — pnpm build/lint/test 통과
 
 ## 다음에 해야 할 일
 
-### Step 3 가입 흐름 마무리 (다음 세션 핵심)
-- [ ] **`0005_signup.sql` 마이그레이션** — `signup_member` SECURITY DEFINER RPC 함수
-  - 폼 데이터 받아 `members` row + `member_genres` rows 생성
-  - invite code 검증 → 유효시 `application_status='approved'`, 없으면 `'pending'`
-  - `role`/`application_status` 사용자가 직접 못 박게 RPC가 강제
-  - 기존 `members_self_insert` 정책 drop (RPC만이 INSERT 경로)
-- [ ] **`/signup` 폼 페이지** — 디자인 시스템 적용
-  - 필수: 실명, 댄서명, 기수(numeric 0.5단위), 타입(undergrad/grad/other), 장르(>=1, primary 1개)
-  - 선택: 학번, 학교(default KAIST), 국가(default KR), 인스타, 한 줄 자기소개, 자유 텍스트(200자), 영상 3슬롯
-  - 코드 입력 또는 가입 사유 둘 중 하나 필수
-- [ ] **`/auth/callback` 업데이트** — exchangeCode 후 members row 존재 여부 체크 → 없으면 `/signup`, 있으면 `/`로
-- [ ] **헬퍼** `getUserAndMember()` (server component용)
-- [ ] **본인 첫 가입 테스트** — 본인 OWNER_EMAIL이라 invite code 없어도 admin 승인 없이 진입 가능해야 함 (RPC에서 owner 자동 approve 분기 추가 검토)
+### Step 3 검증 (사용자 작업 + 테스트)
+- [x] **`0005_signup.sql` + `0006_fix_owner_claim.sql` Dashboard 실행** — SQL Editor 적용 완료
+- [x] **본인 첫 가입 테스트** — OWNER_EMAIL 로그인 → /signup 제출 → role=owner, application_status=approved 확인 완료 (2026-04-27)
+- [ ] **invite code 시드** — owner 자격으로 `invite_codes` row 1개 수동 INSERT (테스트용 7일짜리)
+- [ ] **invite code 가입 경로 테스트** — 다른 Google 계정으로 코드 입력 → 즉시 approved
+- [ ] **pending 가입 경로 테스트** — 코드 없이 신청 → application_status='pending', /signup/pending 페이지 도착
+- [ ] **이미 가입한 유저 /signup 접근 테스트** — `/`로 redirect되는지
 - [ ] **avatar 업로드** — 일단 건너뜀 (`/me` 페이지에서 추후)
 
 ### Step 4 이후 (큰 그림)
@@ -100,7 +101,6 @@
 - **도메인** — `lunatic.dance` vs `reallunatic.com` (memory `project_domain_decision.md`).
 - **Logo serif 폰트** — Vollkorn 일단 셋업. DM Serif Display / Playfair Display 비교 후 확정.
 - **굿즈 처리 방식** — 외부 스마트스토어 링크 vs Google 폼 (default: 외부 링크).
-- **Owner 첫 가입 처리** — RPC에서 OWNER_EMAIL 매칭 시 자동 approve 분기 vs admin 직접 row 생성.
 - **Avatar 업로드 시점** — 가입 폼에 포함 vs `/me` 편집에서. 현재는 `/me`로 미룸.
 
 ## 미해결 위험
@@ -110,7 +110,7 @@
 3. **Big Shoulders 한글 미지원** — Pretendard Black fallback. 영/한 mix 시 시각 무게 차이.
 4. **Supabase Storage RLS 별도 시스템** — 테이블 RLS와 분리. bucket policy 따로 설정.
 5. **유튜브 SPOF** — 채널 정지 시 영상 임베드 다 깨짐. 메타데이터는 자체 DB 보관.
-6. **Members INSERT 보안** — 현재 `members_self_insert` 정책이 `id = auth.uid()`만 검증. role/application_status 임의 설정 가능. `0005_signup.sql`에서 RPC만 허용으로 잠가야 함.
+6. **Members INSERT 보안** — `0005_signup.sql`에서 `members_self_insert` 정책 drop, `signup_member` SECURITY DEFINER RPC만 INSERT 경로. role/application_status는 RPC가 강제 (사용자 input 무시).
 
 ## 산출물 위치
 
