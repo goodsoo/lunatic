@@ -2,6 +2,16 @@ import { GENRES, type GenreSlug } from "./genres";
 
 const GENRE_SET = new Set<string>(GENRES.map((g) => g.slug));
 const TYPES = new Set(["undergrad", "grad", "other"]);
+export const EVENT_KINDS = [
+  "performance",
+  "battle",
+  "workshop",
+  "session",
+  "other",
+] as const;
+export type EventKind = (typeof EVENT_KINDS)[number];
+const EVENT_KIND_SET = new Set<string>(EVENT_KINDS);
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -145,4 +155,88 @@ export function validateAvatarPath(
   const ext = path.split(".").pop()?.toLowerCase();
   if (!ext || !["jpg", "jpeg", "png", "webp"].includes(ext)) return false;
   return true;
+}
+
+export type EventInput = {
+  slug: string;
+  title: string;
+  kind: string;
+  starts_at: string;
+  ends_at: string;
+  location: string;
+  description: string;
+  is_public: string;
+  genres: string[];
+};
+
+export type ValidatedEvent = {
+  slug: string;
+  title: string;
+  kind: EventKind;
+  starts_at: string;
+  ends_at: string | null;
+  location: string | null;
+  description: string | null;
+  is_public: boolean;
+  genres: GenreSlug[];
+};
+
+function parseDate(raw: string): Date | null {
+  if (!raw) return null;
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+export function validateEventInput(
+  raw: EventInput,
+): ValidationResult<ValidatedEvent> {
+  const slug = raw.slug.trim().toLowerCase();
+  const title = raw.title.trim();
+  const kind = raw.kind.trim();
+  const location = raw.location.trim();
+  const description = raw.description.trim();
+  const genres = raw.genres.map((g) => g.trim()).filter(Boolean);
+
+  if (!slug) return { ok: false, error: "slug_required" };
+  if (slug.length > 80) return { ok: false, error: "slug_too_long" };
+  if (!SLUG_RE.test(slug)) return { ok: false, error: "slug_invalid" };
+
+  if (!title) return { ok: false, error: "title_required" };
+  if (title.length > 200) return { ok: false, error: "title_too_long" };
+
+  if (!EVENT_KIND_SET.has(kind)) return { ok: false, error: "kind_invalid" };
+
+  const starts = parseDate(raw.starts_at);
+  if (!starts) return { ok: false, error: "starts_at_invalid" };
+
+  const ends = raw.ends_at.trim() ? parseDate(raw.ends_at) : null;
+  if (raw.ends_at.trim() && !ends) {
+    return { ok: false, error: "ends_at_invalid" };
+  }
+  if (ends && ends.getTime() < starts.getTime()) {
+    return { ok: false, error: "ends_before_starts" };
+  }
+
+  if (!genres.every((g) => GENRE_SET.has(g))) {
+    return { ok: false, error: "genres_invalid" };
+  }
+
+  if (description.length > 5000) {
+    return { ok: false, error: "description_too_long" };
+  }
+
+  return {
+    ok: true,
+    data: {
+      slug,
+      title,
+      kind: kind as EventKind,
+      starts_at: starts.toISOString(),
+      ends_at: ends ? ends.toISOString() : null,
+      location: location || null,
+      description: description || null,
+      is_public: raw.is_public === "yes",
+      genres: genres as GenreSlug[],
+    },
+  };
 }

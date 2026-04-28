@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export type MemberSummary = {
@@ -24,4 +25,18 @@ export async function getUserAndMember() {
     .maybeSingle<MemberSummary>();
 
   return { user, member: member ?? null };
+}
+
+export function isAdminOrOwner(member: MemberSummary | null): boolean {
+  if (!member) return false;
+  if (member.application_status !== "approved") return false;
+  return member.role === "admin" || member.role === "owner";
+}
+
+export async function requireAdminOrOwner() {
+  const { user, member } = await getUserAndMember();
+  if (!user) redirect("/auth/error?reason=login_required");
+  if (!member) redirect("/signup");
+  if (!isAdminOrOwner(member)) redirect("/auth/error?reason=forbidden");
+  return { user, member };
 }

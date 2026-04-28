@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { isAdminOrOwner, type MemberSummary } from "@/lib/auth";
 import { signInWithGoogle, signOut } from "@/app/auth/actions";
 
 export async function SiteHeader() {
@@ -7,6 +8,17 @@ export async function SiteHeader() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  let member: MemberSummary | null = null;
+  if (user) {
+    const { data } = await supabase
+      .from("members")
+      .select("id, dancer_name, application_status, role")
+      .eq("id", user.id)
+      .maybeSingle<MemberSummary>();
+    member = data ?? null;
+  }
+  const showAdmin = isAdminOrOwner(member);
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between bg-bg/80 px-4 py-4 backdrop-blur md:px-8">
@@ -32,6 +44,11 @@ export async function SiteHeader() {
         {user && (
           <Link href="/dancers" className="hover:text-text-1">
             Dancers
+          </Link>
+        )}
+        {showAdmin && (
+          <Link href="/admin/events" className="text-accent hover:opacity-80">
+            Admin
           </Link>
         )}
         <span className="hidden h-3 w-px bg-text-3/40 md:inline-block" />

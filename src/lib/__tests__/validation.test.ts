@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import {
   validateAvatarPath,
+  validateEventInput,
   validateProfileInput,
   validateSignupInput,
 } from "../validation";
@@ -213,5 +214,132 @@ describe("validateAvatarPath", () => {
 
   it("rejects when userId is not a UUID", () => {
     expect(validateAvatarPath("foo/bar.jpg", "not-a-uuid")).toBe(false);
+  });
+});
+
+function baseEvent() {
+  return {
+    slug: "spring-show-2026",
+    title: "Spring Show 2026",
+    kind: "performance",
+    starts_at: "2026-05-10T19:00:00.000Z",
+    ends_at: "",
+    location: "KAIST 학술문화관",
+    description: "정기공연.",
+    is_public: "yes",
+    genres: ["popping", "locking"],
+  };
+}
+
+describe("validateEventInput", () => {
+  it("accepts a complete payload", () => {
+    const r = validateEventInput(baseEvent());
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.data.slug).toBe("spring-show-2026");
+      expect(r.data.kind).toBe("performance");
+      expect(r.data.is_public).toBe(true);
+      expect(r.data.ends_at).toBeNull();
+      expect(r.data.genres).toEqual(["popping", "locking"]);
+    }
+  });
+
+  it("treats is_public != 'yes' as private", () => {
+    const r = validateEventInput({ ...baseEvent(), is_public: "no" });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.data.is_public).toBe(false);
+  });
+
+  it("normalizes slug to lowercase", () => {
+    const r = validateEventInput({ ...baseEvent(), slug: "SPRING-Show-2026" });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.data.slug).toBe("spring-show-2026");
+  });
+
+  it("rejects empty slug", () => {
+    const r = validateEventInput({ ...baseEvent(), slug: "" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe("slug_required");
+  });
+
+  it("rejects slug with invalid chars", () => {
+    const r = validateEventInput({ ...baseEvent(), slug: "spring show!" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe("slug_invalid");
+  });
+
+  it("rejects slug with leading/trailing dash", () => {
+    const r = validateEventInput({ ...baseEvent(), slug: "-spring-" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe("slug_invalid");
+  });
+
+  it("rejects empty title", () => {
+    const r = validateEventInput({ ...baseEvent(), title: "   " });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe("title_required");
+  });
+
+  it("rejects unknown kind", () => {
+    const r = validateEventInput({ ...baseEvent(), kind: "rave" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe("kind_invalid");
+  });
+
+  it("rejects invalid starts_at", () => {
+    const r = validateEventInput({ ...baseEvent(), starts_at: "not-a-date" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe("starts_at_invalid");
+  });
+
+  it("rejects ends_at before starts_at", () => {
+    const r = validateEventInput({
+      ...baseEvent(),
+      ends_at: "2026-05-09T19:00:00.000Z",
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe("ends_before_starts");
+  });
+
+  it("accepts ends_at equal to starts_at", () => {
+    const r = validateEventInput({
+      ...baseEvent(),
+      ends_at: baseEvent().starts_at,
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it("rejects unknown genre slug", () => {
+    const r = validateEventInput({ ...baseEvent(), genres: ["popping", "foo"] });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe("genres_invalid");
+  });
+
+  it("accepts empty genres", () => {
+    const r = validateEventInput({ ...baseEvent(), genres: [] });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.data.genres).toEqual([]);
+  });
+
+  it("rejects description over 5000 chars", () => {
+    const r = validateEventInput({
+      ...baseEvent(),
+      description: "x".repeat(5001),
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toBe("description_too_long");
+  });
+
+  it("nulls out empty location/description", () => {
+    const r = validateEventInput({
+      ...baseEvent(),
+      location: "  ",
+      description: "",
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.data.location).toBeNull();
+      expect(r.data.description).toBeNull();
+    }
   });
 });
